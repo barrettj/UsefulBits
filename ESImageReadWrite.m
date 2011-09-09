@@ -245,6 +245,7 @@ void ESWriteRawImageToFile(UIImage *image, NSString *fileName, CGBitmapInfo bitm
 		CGContextRelease(context);
 		NSData *data = [[NSData alloc] initWithBytesNoCopy:map length:FILESIZE freeWhenDone:YES];
 		[data writeToFile:path atomically:NO];
+		[data release];
 	}
 }
 
