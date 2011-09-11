@@ -1,8 +1,7 @@
 //
 //  ESMutableDictionary.h
-//  ThreadHash
 //
-//  Created by Doug Russell on 9/1/11.
+//  Created by Doug Russell
 //  Copyright (c) 2011 Doug Russell. All rights reserved.
 //  
 //  Licensed under the Apache License, Version 2.0 (the "License");
