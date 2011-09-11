@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#import "ARCLogic.h"
 
 //	
 //	References
@@ -245,9 +246,7 @@ void ESWriteRawImageToFile(UIImage *image, NSString *fileName, CGBitmapInfo bitm
 		CGContextRelease(context);
 		NSData *data = [[NSData alloc] initWithBytesNoCopy:map length:FILESIZE freeWhenDone:YES];
 		[data writeToFile:path atomically:NO];
-#if !__has_feature(objc_arc)
-		[data release];
-#endif
+		NO_ARC([data release];)
 	}
 }
 

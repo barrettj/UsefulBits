@@ -2,6 +2,22 @@
 //  ARCLogic.h
 //	
 
+#ifndef ARCLOGIC
+#define ARCLOGIC
+
+#ifdef HASARC
+#undef HASARC
+#endif
+#ifdef HASWEAK
+#undef HASWEAK
+#endif
+#ifdef STRONG
+#undef STRONG
+#endif
+#ifdef WEAK
+#undef WEAK
+#endif
+
 #if __has_feature(objc_arc)
 #define HASARC 1
 #else
@@ -28,4 +44,6 @@
 #define NO_ARC(NoARCBlock) NoARCBlock
 #define STRONG retain
 #define WEAK assign
+#endif
+
 #endif
