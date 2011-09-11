@@ -45,7 +45,8 @@
 	{
 		CGRect clipRect = CGContextGetClipBoundingBox(ctx);
 		UIGraphicsPushContext(ctx);
-		CGContextClearRect(ctx, clipRect);
+		if ([self clearsContextBeforeDrawing])
+			CGContextClearRect(ctx, clipRect);
 		CGContextSetAllowsAntialiasing(ctx, true);
 		CGContextSetShouldAntialias(ctx, true);
 		CGContextSetShouldSmoothFonts(ctx, YES);
