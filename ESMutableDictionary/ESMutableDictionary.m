@@ -74,9 +74,13 @@
 	__block Boolean present;
 	dispatch_sync(_syncQueue, ^(void) {
 		present = CFDictionaryGetValueIfPresent(_internalDictionary, (__bridge CFTypeRef)key, &value);
+		if (present && value != NULL)
+			CFRetain(value);
 	});
 	if (present)
-		return (__bridge id)value;
+	{
+		return objc_retainedObject(value);
+	}
 	else
 		return nil;
 }
