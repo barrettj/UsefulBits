@@ -22,10 +22,9 @@
 typedef id (^ESTransformBlock)(id inputValue);
 
 @interface ESPropertyMap : NSObject
-{
-@protected
-	ESTransformBlock _inverseTransformBlock;
-}
+
++ (id)newPropertyMapWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey;
+- (id)initWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey;
 + (id)newPropertyMapWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey transformBlock:(ESTransformBlock)transformBlock;
 - (id)initWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey transformBlock:(ESTransformBlock)transformBlock;
 

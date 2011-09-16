@@ -45,15 +45,7 @@
 			}
 			return outArray;
 		};
-	}
-	return self;
-}
-
-- (ESTransformBlock)inverseTransformBlock
-{
-	if (_inverseTransformBlock == nil)
-	{
-		_inverseTransformBlock = [^id(id inputValue) {
+		self.inverseTransformBlock = ^id(id inputValue) {
 			NSMutableArray *dictionaryArray = [NSMutableArray new];
 			for (id member in (NSArray *)inputValue)
 			{
@@ -62,9 +54,9 @@
 					[dictionaryArray addObject:dictionary];
 			}
 			return dictionaryArray;
-		} copy];
+		};
 	}
-	return _inverseTransformBlock;
+	return self;
 }
 
 @end

@@ -73,6 +73,12 @@
 				[NSException raise:@"Readonly Exception" format:@"Attempted to set a readonly property: %@", attributes];
 			switch (attributes.storageType) {
 				case IDType:
+					// If there's a transform block, execute it
+					if (propertyMap.transformBlock)
+						propertyValue = propertyMap.transformBlock(dictionaryValue);
+					else
+						propertyValue = dictionaryValue;
+					[self setValue:propertyValue forKey:outputKey];
 					break;
 				case ObjectType:
 					// If there's a transform block, execute it
@@ -82,9 +88,7 @@
 						propertyValue = dictionaryValue;
 					Class class = NSClassFromString(attributes.classString);
 					if (![propertyValue isKindOfClass:class])
-					{
-						// throw exception
-					}
+						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind fo class: %@", propertyValue, class];
 					[self setValue:propertyValue forKey:outputKey];
 					break;
 				case IntType:
@@ -178,7 +182,6 @@
 				inputKey = propertyMap.inputKey;
 			switch (attributes.storageType) {
 				case IDType:
-					break;
 				case ObjectType:
 					propertyValue = [self valueForKey:outputKey];
 					if (propertyMap.inverseTransformBlock)

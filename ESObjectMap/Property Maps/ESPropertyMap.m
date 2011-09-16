@@ -25,9 +25,19 @@
 @synthesize transformBlock=_transformBlock;
 @synthesize inverseTransformBlock=_inverseTransformBlock;
 
++ (id)newPropertyMapWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey
+{
+	return [[[self class] alloc] initWithInputKey:inputKey outputKey:outputKey transformBlock:nil];
+}
+
 + (id)newPropertyMapWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey transformBlock:(ESTransformBlock)transformBlock
 {
 	return [[[self class] alloc] initWithInputKey:inputKey outputKey:outputKey transformBlock:transformBlock];
+}
+
+- (id)initWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey
+{
+	return [self initWithInputKey:inputKey outputKey:outputKey transformBlock:nil];
 }
 
 - (id)initWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey transformBlock:(ESTransformBlock)transformBlock
@@ -42,21 +52,6 @@
 		self.transformBlock = transformBlock;
 	}
 	return self;
-}
-
-// If inverseTransform isn't initialized, make it a no op
-
-// Need to consider any threading issues with lazy initialization without locking
-
-- (ESTransformBlock)inverseTransformBlock
-{
-	if (_inverseTransformBlock == nil)
-	{
-		_inverseTransformBlock = [^id(id inputValue) {
-			return inputValue;
-		} copy];
-	}
-	return _inverseTransformBlock;
 }
 
 @end
