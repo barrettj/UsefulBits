@@ -92,7 +92,7 @@ ESDeclaredPropertyAttributes * CreatePropertyAttributes(objc_property_t property
 						break;
 					}
 					case 'c':
-						storageType = CharType;
+						storageType = BoolType;
 						break;
 					case 'd':
 						storageType = DoubleType;

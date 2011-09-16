@@ -32,7 +32,7 @@ typedef enum
 {
 	IDType,
 	ObjectType,
-	CharType,
+	BoolType, // We assume that chars are BOOLs
 	DoubleType,
 	FloatType,
 	IntType,
@@ -48,7 +48,7 @@ typedef enum
 @property (nonatomic) SEL setter;
 @property (nonatomic) PropertyStorageMethod storageMethod;
 @property (nonatomic) BOOL readOnly;
-@property (assign, nonatomic) BOOL nonatomic;
-@property (assign, nonatomic) BOOL dynamic;
+@property (nonatomic) BOOL nonatomic;
+@property (nonatomic) BOOL dynamic;
 
 @end
