@@ -20,6 +20,179 @@
 #import "ESObjectMapFunctions.h"
 #import "ESMutableDictionary.h"
 #import <objc/runtime.h>
+#import "NSObject+PropertyDictionary.h"
+
+void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary)
+{
+	NSDictionary *propertyDictionary = [[object class] propertyDictionary];
+	ESObjectMap *objectMap = [[object class] objectMap];
+	for (ESDeclaredPropertyAttributes *attributes in [propertyDictionary allValues])
+	{
+		@autoreleasepool {
+			NSString *inputKey;
+			NSString *outputKey;
+			id dictionaryValue;
+			id propertyValue;
+			
+			outputKey = attributes.name;
+			if (outputKey == nil)
+				continue;
+			// Get the property map, if it exists
+			ESPropertyMap *propertyMap = [objectMap propertyMapForOutputKey:outputKey];
+			if (propertyMap == nil) // If there's no property map, then assume inputKey simply maps to outputKey
+				inputKey = outputKey;
+			else // If there is a property map, get the input key
+				inputKey = propertyMap.inputKey;
+			// Grab our value from the input dictionary
+			dictionaryValue = [dictionary objectForKey:inputKey];
+			if (dictionaryValue == nil)
+				continue;
+			// At this point we have a value to work with, so let's make sure we can actually set it
+			if (attributes.readOnly)
+				[NSException raise:@"Readonly Exception" format:@"Attempted to set a readonly property: %@", attributes];
+			switch (attributes.storageType) {
+				case IDType:
+					// If there's a transform block, execute it
+					if (propertyMap.transformBlock)
+						propertyValue = propertyMap.transformBlock(dictionaryValue);
+					else
+						propertyValue = dictionaryValue;
+					if (propertyValue == nil)
+						continue;
+					[object setValue:propertyValue forKey:outputKey];
+					break;
+				case ObjectType:
+					// If there's a transform block, execute it
+					if (propertyMap.transformBlock)
+						propertyValue = propertyMap.transformBlock(dictionaryValue);
+					else
+						propertyValue = dictionaryValue;
+					if (propertyValue == nil)
+						continue;
+					Class class = NSClassFromString(attributes.classString);
+					if (![propertyValue isKindOfClass:class])
+						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind of class: %@", propertyValue, NSStringFromClass(class)];
+					[object setValue:propertyValue forKey:outputKey];
+					break;
+				case IntType:
+				{
+					int intPropertyValue = 0;
+					// If there's a transform block, execute it
+					if (((ESIntPropertyMap *)propertyMap).intTransformBlock)
+						intPropertyValue = ((ESIntPropertyMap *)propertyMap).intTransformBlock(dictionaryValue);
+					else
+						intPropertyValue = [dictionaryValue intValue];
+					SetPrimitivePropertyValue(object, attributes.setter, &intPropertyValue);
+					break;
+				}
+				case DoubleType:
+				{
+					double doublePropertyValue = 0.0;
+					// If there's a transform block, execute it
+					if (((ESDoublePropertyMap *)propertyMap).doubleTransformBlock)
+						doublePropertyValue = ((ESDoublePropertyMap *)propertyMap).doubleTransformBlock(dictionaryValue);
+					else
+						doublePropertyValue = [dictionaryValue doubleValue];
+					SetPrimitivePropertyValue(object, attributes.setter, &doublePropertyValue);
+					break;
+				}
+				case FloatType:
+				{
+					float floatPropertyValue = 0.0f;
+					// If there's a transform block, execute it
+					if (((ESFloatPropertyMap *)propertyMap).floatTransformBlock)
+						floatPropertyValue = ((ESFloatPropertyMap *)propertyMap).floatTransformBlock(dictionaryValue);
+					else
+						floatPropertyValue = [dictionaryValue floatValue];
+					SetPrimitivePropertyValue(object, attributes.setter, &floatPropertyValue);
+					break;
+				}
+				case BoolType:
+				{
+					BOOL boolPropertyValue = NO;
+					// If there's a transform block, execute it
+					if (((ESBOOLPropertyMap *)propertyMap).boolTransformBlock)
+						boolPropertyValue = ((ESBOOLPropertyMap *)propertyMap).boolTransformBlock(dictionaryValue);
+					else
+						boolPropertyValue = [dictionaryValue boolValue];
+					SetPrimitivePropertyValue(object, attributes.setter, &boolPropertyValue);
+					break;
+				}
+				default:
+					break;
+			}
+		}
+	}
+}
+
+NSDictionary * GetDictionaryRepresentation(id<ESObject> object)
+{
+	NSMutableDictionary *dictionaryRepresentation = [NSMutableDictionary new];
+	NSDictionary *propertyDictionary = [[object class] propertyDictionary];
+	ESObjectMap *objectMap = [[object class] objectMap];
+	for (ESDeclaredPropertyAttributes *attributes in [propertyDictionary allValues])
+	{
+		@autoreleasepool {
+			NSString *inputKey;
+			NSString *outputKey;
+			id dictionaryValue;
+			id propertyValue;
+			
+			outputKey = attributes.name;
+			if (outputKey == nil)
+				continue;
+			// Get the property map, if it exists
+			ESPropertyMap *propertyMap = [objectMap propertyMapForOutputKey:outputKey];
+			if (propertyMap == nil) // If there's no property map, then assume inputKey simply maps to outputKey
+				inputKey = outputKey;
+			else // If there is a property map, get the input key
+				inputKey = propertyMap.inputKey;
+			switch (attributes.storageType) {
+				case IDType:
+				case ObjectType:
+					propertyValue = [object valueForKey:outputKey];
+					if (propertyMap.inverseTransformBlock)
+						dictionaryValue = propertyMap.inverseTransformBlock(propertyValue);
+					else
+						dictionaryValue = propertyValue;
+					break;
+				case IntType:
+				{
+					int result;
+					GetPrimitivePropertyValue(object, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithInt:result];
+					break;
+				}
+				case DoubleType:
+				{
+					double result;
+					GetPrimitivePropertyValue(object, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithDouble:result];
+					break;
+				}
+				case FloatType:
+				{
+					float result;
+					GetPrimitivePropertyValue(object, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithFloat:result];
+					break;
+				}
+				case BoolType:
+				{
+					BOOL result;
+					GetPrimitivePropertyValue(object, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithBool:result];
+					break;
+				}
+				default:
+					break;
+			}
+			if (dictionaryValue)
+				[dictionaryRepresentation setObject:dictionaryValue forKey:inputKey];
+		}
+	}
+	return dictionaryRepresentation;
+}
 
 static ESMutableDictionary *_objectMapCache;
 

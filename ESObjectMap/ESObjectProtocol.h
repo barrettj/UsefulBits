@@ -1,5 +1,5 @@
 //
-//  ESObjectMapFunctions.h
+//  ESObjectProtocol.h
 //	
 //  Created by Doug Russell
 //  Copyright (c) 2011 Doug Russell. All rights reserved.
@@ -18,11 +18,15 @@
 //  
 
 #import <Foundation/Foundation.h>
+#import "NSObject+PropertyDictionary.h"
 #import "ESObjectMap.h"
-#import "ESObjectProtocol.h"
 
-void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary);
-NSDictionary * GetDictionaryRepresentation(id<ESObject> object);
-ESObjectMap * GetObjectMapForClass(Class objectClass);
-void GetPrimitivePropertyValue(id object, SEL getter, void * value);
-void SetPrimitivePropertyValue(id object, SEL setter, void * value);
+@protocol ESObject <NSObject>
+
++ (ESObjectMap *)objectMap;
+- (void)configureWithDictionary:(NSDictionary *)dictionary;
+- (NSDictionary *)dictionaryRepresentation;
+- (id)valueForKey:(NSString *)key;
+- (void)setValue:(id)value forKey:(NSString *)key;
+
+@end

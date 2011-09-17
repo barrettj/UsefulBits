@@ -18,15 +18,12 @@
 //  
 
 #import <Foundation/Foundation.h>
-#import "NSObject+PropertyDictionary.h"
 #import "ESObjectMap.h"
+#import "ESObjectProtocol.h"
 
-@interface ESBaseModelObject : NSObject
+@interface ESBaseModelObject : NSObject <ESObject>
 
-+ (ESObjectMap *)objectMap;
 + (id)newWithDictionary:(NSDictionary *)dictionary;
 - (id)initWithDictionary:(NSDictionary *)dictionary;
-- (void)configureWithDictionary:(NSDictionary *)dictionary;
-- (NSDictionary *)dictionaryRepresentation;
 
 @end
