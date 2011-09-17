@@ -78,6 +78,7 @@ ESDeclaredPropertyAttributes * CreatePropertyAttributes(objc_property_t property
 			case 'T': // Type
 			{
 				PropertyStorageType storageType;
+				// http://developer.apple.com/library/mac/#documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html
 				switch (attribute[1]) {
 					case '@':
 					{
