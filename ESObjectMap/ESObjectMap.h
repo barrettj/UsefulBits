@@ -26,6 +26,7 @@
 #import "ESArrayPropertyMap.h"
 #import "ESEpochDatePropertyMap.h"
 #import "ESURLPropertyMap.h"
+#import "ESObjectPropertyMap.h"
 
 @interface ESObjectMap : NSObject
 
