@@ -99,11 +99,7 @@
 						intPropertyValue = ((ESIntPropertyMap *)propertyMap).intTransformBlock(dictionaryValue);
 					else
 						intPropertyValue = [dictionaryValue intValue];
-					NSInvocation *setIntInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.setter]];
-					[setIntInvocation setTarget:self];
-					[setIntInvocation setSelector:attributes.setter];
-					[setIntInvocation setArgument:&intPropertyValue atIndex:2];
-					[setIntInvocation invoke];
+					SetPrimitivePropertyValue(self, attributes.setter, &intPropertyValue);
 					break;
 				}
 				case DoubleType:
@@ -114,11 +110,7 @@
 						doublePropertyValue = ((ESDoublePropertyMap *)propertyMap).doubleTransformBlock(dictionaryValue);
 					else
 						doublePropertyValue = [dictionaryValue doubleValue];
-					NSInvocation *setIntInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.setter]];
-					[setIntInvocation setTarget:self];
-					[setIntInvocation setSelector:attributes.setter];
-					[setIntInvocation setArgument:&doublePropertyValue atIndex:2];
-					[setIntInvocation invoke];
+					SetPrimitivePropertyValue(self, attributes.setter, &doublePropertyValue);
 					break;
 				}
 				case FloatType:
@@ -129,11 +121,7 @@
 						floatPropertyValue = ((ESFloatPropertyMap *)propertyMap).floatTransformBlock(dictionaryValue);
 					else
 						floatPropertyValue = [dictionaryValue floatValue];
-					NSInvocation *setIntInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.setter]];
-					[setIntInvocation setTarget:self];
-					[setIntInvocation setSelector:attributes.setter];
-					[setIntInvocation setArgument:&floatPropertyValue atIndex:2];
-					[setIntInvocation invoke];
+					SetPrimitivePropertyValue(self, attributes.setter, &floatPropertyValue);
 					break;
 				}
 				case BoolType:
@@ -144,11 +132,7 @@
 						boolPropertyValue = ((ESBOOLPropertyMap *)propertyMap).boolTransformBlock(dictionaryValue);
 					else
 						boolPropertyValue = [dictionaryValue boolValue];
-					NSInvocation *setIntInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.setter]];
-					[setIntInvocation setTarget:self];
-					[setIntInvocation setSelector:attributes.setter];
-					[setIntInvocation setArgument:&boolPropertyValue atIndex:2];
-					[setIntInvocation invoke];
+					SetPrimitivePropertyValue(self, attributes.setter, &boolPropertyValue);
 					break;
 				}
 				default:
@@ -191,54 +175,30 @@
 					break;
 				case IntType:
 				{
-					NSInvocation *getIntInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.getter]];
-					[getIntInvocation setTarget:self];
-					[getIntInvocation setSelector:attributes.getter];
 					int result;
-					[getIntInvocation invoke];
-					[getIntInvocation getReturnValue:&result];
-					NSNumber *intNumber = [NSNumber numberWithInt:result];
-					if (intNumber)
-						dictionaryValue = intNumber;
+					GetPrimitivePropertyValue(self, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithInt:result];
 					break;
 				}
 				case DoubleType:
 				{
-					NSInvocation *getDoubleInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.getter]];
-					[getDoubleInvocation setTarget:self];
-					[getDoubleInvocation setSelector:attributes.getter];
 					double result;
-					[getDoubleInvocation invoke];
-					[getDoubleInvocation getReturnValue:&result];
-					NSNumber *doubleNumber = [NSNumber numberWithDouble:result];
-					if (doubleNumber)
-						dictionaryValue = doubleNumber;
+					GetPrimitivePropertyValue(self, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithDouble:result];
 					break;
 				}
 				case FloatType:
 				{
-					NSInvocation *getFloatInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.getter]];
-					[getFloatInvocation setTarget:self];
-					[getFloatInvocation setSelector:attributes.getter];
 					float result;
-					[getFloatInvocation invoke];
-					[getFloatInvocation getReturnValue:&result];
-					NSNumber *floatNumber = [NSNumber numberWithFloat:result];
-					if (floatNumber)
-						dictionaryValue = floatNumber;
+					GetPrimitivePropertyValue(self, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithFloat:result];
 					break;
 				}
 				case BoolType:
 				{
-					NSInvocation *getBOOLInvocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:attributes.getter]];
-					[getBOOLInvocation setTarget:self];
-					[getBOOLInvocation setSelector:attributes.getter];
 					BOOL result;
-					[getBOOLInvocation invoke];
-					[getBOOLInvocation getReturnValue:&result];
-					NSNumber *boolNumber = [NSNumber numberWithBool:result];
-					if (boolNumber)
-						dictionaryValue = boolNumber;
+					GetPrimitivePropertyValue(self, attributes.getter, &result);
+					dictionaryValue = [NSNumber numberWithBool:result];
 					break;
 				}
 				default:

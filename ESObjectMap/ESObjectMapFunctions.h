@@ -21,3 +21,5 @@
 #import "ESObjectMap.h"
 
 ESObjectMap * GetObjectMapForClass(Class objectClass);
+void GetPrimitivePropertyValue(id object, SEL getter, void * value);
+void SetPrimitivePropertyValue(id object, SEL setter, void * value);

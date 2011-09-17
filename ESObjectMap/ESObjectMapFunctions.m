@@ -19,6 +19,7 @@
 
 #import "ESObjectMapFunctions.h"
 #import "ESMutableDictionary.h"
+#import <objc/runtime.h>
 
 static ESMutableDictionary *_objectMapCache;
 
@@ -36,4 +37,22 @@ ESObjectMap * GetObjectMapForClass(Class objectClass)
 	objectMap = [ESObjectMap new];
 	[_objectMapCache setObject:objectMap forKey:objectClass];
 	return objectMap;
+}
+
+void GetPrimitivePropertyValue(id object, SEL getter, void * value)
+{
+	NSInvocation *getInvocation = [NSInvocation invocationWithMethodSignature:[object methodSignatureForSelector:getter]];
+	[getInvocation setTarget:object];
+	[getInvocation setSelector:getter];
+	[getInvocation invoke];
+	[getInvocation getReturnValue:value];
+}
+
+void SetPrimitivePropertyValue(id object, SEL setter, void * value)
+{
+	NSInvocation *setIntInvocation = [NSInvocation invocationWithMethodSignature:[object methodSignatureForSelector:setter]];
+	[setIntInvocation setTarget:object];
+	[setIntInvocation setSelector:setter];
+	[setIntInvocation setArgument:value atIndex:2];
+	[setIntInvocation invoke];
 }
