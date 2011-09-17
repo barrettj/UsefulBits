@@ -15,5 +15,4 @@
 + (id)newPropertyMapWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey objectClass:(Class)objectClass;
 - (id)initWithInputKey:(NSString *)inputKey outputKey:(NSString *)outputKey objectClass:(Class)objectClass;
 
-
 @end

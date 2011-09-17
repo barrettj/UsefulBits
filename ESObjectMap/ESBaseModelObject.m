@@ -78,6 +78,8 @@
 						propertyValue = propertyMap.transformBlock(dictionaryValue);
 					else
 						propertyValue = dictionaryValue;
+					if (propertyValue == nil)
+						continue;
 					[self setValue:propertyValue forKey:outputKey];
 					break;
 				case ObjectType:
@@ -86,9 +88,11 @@
 						propertyValue = propertyMap.transformBlock(dictionaryValue);
 					else
 						propertyValue = dictionaryValue;
+					if (propertyValue == nil)
+						continue;
 					Class class = NSClassFromString(attributes.classString);
 					if (![propertyValue isKindOfClass:class])
-						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind fo class: %@", propertyValue, class];
+						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind of class: %@", propertyValue, NSStringFromClass(class)];
 					[self setValue:propertyValue forKey:outputKey];
 					break;
 				case IntType:
