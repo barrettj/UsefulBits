@@ -91,7 +91,7 @@
 					if (propertyValue == nil)
 						continue;
 					Class class = NSClassFromString(attributes.classString);
-					if (![propertyValue isKindOfClass:class])
+					if (class && ![propertyValue isKindOfClass:class])
 						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind of class: %@", propertyValue, NSStringFromClass(class)];
 					[self setValue:propertyValue forKey:outputKey];
 					break;
