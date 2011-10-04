@@ -82,41 +82,41 @@
 
 - (void)saveContext:(NSManagedObjectContext *)managedObjectContext
 {
-    NSError *error = nil;
-    if (managedObjectContext != nil)
-    {
-        if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error])
-        {
-            [self handleSaveError:managedObjectContext error:error];
-        } 
-    }
+	NSError *error = nil;
+	if (managedObjectContext != nil)
+	{
+		if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error])
+		{
+			[self handleSaveError:managedObjectContext error:error];
+		} 
+	}
 }
 
 - (NSManagedObjectContext *)mainThreadManagedObjectContext
 {
 	NSAssert([NSThread isMainThread], @"Accessed main thread MOC from invalid thread");
-    if (_mainThreadManagedObjectContext != nil)
-        return _mainThreadManagedObjectContext;
-    _mainThreadManagedObjectContext = [self newManagedObjectContext];
-    return _mainThreadManagedObjectContext;
+	if (_mainThreadManagedObjectContext != nil)
+		return _mainThreadManagedObjectContext;
+	_mainThreadManagedObjectContext = [self newManagedObjectContext];
+	return _mainThreadManagedObjectContext;
 }
 
 - (NSManagedObjectContext *)newManagedObjectContext
 {
 	NSManagedObjectContext *managedObjectContext = nil;
 	NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
-    if (coordinator != nil)
-    {
-        managedObjectContext = [[NSManagedObjectContext alloc] init];
-        [managedObjectContext setPersistentStoreCoordinator:coordinator];
-    }
-    return managedObjectContext;
+	if (coordinator != nil)
+	{
+		managedObjectContext = [[NSManagedObjectContext alloc] init];
+		[managedObjectContext setPersistentStoreCoordinator:coordinator];
+	}
+	return managedObjectContext;
 }
 
 - (NSManagedObjectModel *)managedObjectModel
 {
 	OSSpinLockLock(&_momSpinlock);
-    if (_managedObjectModel == nil)
+	if (_managedObjectModel == nil)
 	{
 		NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"ESDatabase" withExtension:@"momd"];
 		_managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
@@ -134,12 +134,12 @@
 		[self configurePersistentStoreCoordinator:_persistentStoreCoordinator];
 	}
 	OSSpinLockUnlock(&_pscSpinlock);
-    return _persistentStoreCoordinator;
+	return _persistentStoreCoordinator;
 }
 
 - (NSURL *)applicationDocumentsDirectory
 {
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+	return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
 #pragma mark - Subclasses
