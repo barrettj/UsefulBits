@@ -118,7 +118,7 @@
 	OSSpinLockLock(&_momSpinlock);
 	if (_managedObjectModel == nil)
 	{
-		NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"ESDatabase" withExtension:@"momd"];
+		NSURL *modelURL = [self modelURL];
 		_managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
 	}
 	OSSpinLockUnlock(&_momSpinlock);
@@ -145,7 +145,7 @@
 #pragma mark - Subclasses
 - (void)configurePersistentStoreCoordinator:(NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
-	NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:[self storeName]];
+	NSURL *storeURL = [self storeURL];
 	NSError *error = nil;
 	if (![persistentStoreCoordinator addPersistentStoreWithType:[self storeType] configuration:nil URL:storeURL options:nil error:&error])
 		[NSException raise:NSGenericException format:@"Unresolved error %@, %@", error, [error userInfo]];
@@ -156,9 +156,17 @@
 	[NSException raise:NSGenericException format:@"Unresolved error %@, %@", error, [error userInfo]];
 }
 
-- (NSString *)storeName
+- (NSURL *)storeURL
 {
-	NSAssert(NO, @"Implement storeName in subclass");
+	NSAssert(NO, @"Implement storeURL in subclass");
+	//return [[self applicationDocumentsDirectory] URLByAppendingPathComponent:[self storeName]];
+	return nil;
+}
+
+- (NSURL *)modelURL
+{
+	NSAssert(NO, @"Implement modelURL in subclass");
+	//return [[NSBundle mainBundle] URLForResource:@"ESDatabase" withExtension:@"momd"];
 	return nil;
 }
 
