@@ -30,12 +30,12 @@
 {
 	self = [super initWithInputKey:inputKey 
 						 outputKey:outputKey 
-					transformBlock:^id(id inputValue) {
+					transformBlock:^id (id<ESObject> object, id inputValue) {
 						return [NSDate dateWithTimeIntervalSince1970:[inputValue doubleValue]];
 					}];
 	if (self)
 	{
-		self.inverseTransformBlock = ^id(id inputValue) {
+		self.inverseTransformBlock = ^id (id<ESObject> object, id inputValue) {
 			NSTimeInterval timeIntervalSince1970 = [inputValue timeIntervalSince1970];
 			return [NSNumber numberWithDouble:timeIntervalSince1970];
 		};

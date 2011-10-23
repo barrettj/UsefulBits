@@ -19,6 +19,7 @@
 
 #import <Foundation/Foundation.h>
 #import "ESDeclaredPropertyAttributes.h"
+#import "ESDeclaredPropertyFunctions.h"
 
 @interface NSObject (PropertyDictionary)
 

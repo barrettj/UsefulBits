@@ -19,7 +19,8 @@
 
 #import <Foundation/Foundation.h>
 
-typedef id (^ESTransformBlock)(id inputValue);
+@protocol ESObject;
+typedef id (^ESTransformBlock)(id<ESObject> object, id inputValue);
 
 @interface ESPropertyMap : NSObject
 
