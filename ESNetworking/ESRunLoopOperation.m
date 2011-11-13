@@ -1,4 +1,5 @@
 #import "ESRunLoopOperation.h"
+#import <libkern/OSAtomic.h>
 
 @interface ESRunLoopOperation ()
 // read/write versions of public properties
@@ -7,6 +8,9 @@
 @end
 
 @implementation ESRunLoopOperation
+{
+	OSSpinLock stateLock;
+}
 
 @synthesize runLoopThread=_runLoopThread;
 @synthesize runLoopModes=_runLoopModes;
@@ -21,6 +25,7 @@
 		NSAssert((_state == kESOperationStateInited), @"Operation initialized with invalid state: %d", _state);
 		if (_state != kESOperationStateInited)
 			self = nil;
+		stateLock = OS_SPINLOCK_INIT;
     }
     return self;
 }
@@ -36,7 +41,7 @@
 // Returns the effective run loop thread, that is, the one set by the user 
 // or, if that's not set, the main thread.
 {
-    NSThread *  result;
+    NSThread *result;
     result = self.runLoopThread;
     if (result == nil)
         result = [NSThread mainThread];
@@ -63,6 +68,10 @@
 
 - (ESOperationState)state
 {
+	ESOperationState state;
+	OSSpinLockLock(&stateLock);
+	state = _state;
+	OSSpinLockUnlock(&stateLock);
     return _state;
 }
 
@@ -71,44 +80,47 @@
 {
     // any thread
 	
-    @synchronized (self) 
-	{
-        ESOperationState oldState;
-        
-        // The following check is really important.  The state can only go forward, and there 
-        // should be no redundant changes to the state (that is, newState must never be 
-        // equal to _state).
-        
-		NSAssert((newState > _state), @"Invalid state transition from %d to %d");
-		
-        // Transitions from executing to finished must be done on the run loop thread.
-        
-		NSAssert(((newState != kESOperationStateFinished) || self.isActualRunLoopThread), @"Attempted transition to finish on non run loop thread");
-		
-        // inited    + executing -> isExecuting
-        // inited    + finished  -> isFinished
-        // executing + finished  -> isExecuting + isFinished
-		
-        oldState = _state;
-        if ((newState == kESOperationStateExecuting) || (oldState == kESOperationStateExecuting))
-            [self willChangeValueForKey:@"isExecuting"];
-        if (newState == kESOperationStateFinished)
-            [self willChangeValueForKey:@"isFinished"];
-        _state = newState;
-        if (newState == kESOperationStateFinished)
-            [self didChangeValueForKey:@"isFinished"];
-        if ((newState == kESOperationStateExecuting) || (oldState == kESOperationStateExecuting))
-            [self didChangeValueForKey:@"isExecuting"];
-    }
+	OSSpinLockLock(&stateLock);
+	
+	ESOperationState oldState;
+	
+	// The following check is really important.  The state can only go forward, and there 
+	// should be no redundant changes to the state (that is, newState must never be 
+	// equal to _state).
+	
+	NSAssert((newState > _state), @"Invalid state transition from %d to %d");
+	
+	// Transitions from executing to finished must be done on the run loop thread.
+	
+	NSAssert(((newState != kESOperationStateFinished) || self.isActualRunLoopThread), @"Attempted transition to finish on non run loop thread");
+	
+	// inited    + executing -> isExecuting
+	// inited    + finished  -> isFinished
+	// executing + finished  -> isExecuting + isFinished
+	
+	oldState = _state;
+	if ((newState == kESOperationStateExecuting) || (oldState == kESOperationStateExecuting))
+		[self willChangeValueForKey:@"isExecuting"];
+	if (newState == kESOperationStateFinished)
+		[self willChangeValueForKey:@"isFinished"];
+	_state = newState;
+	if (newState == kESOperationStateFinished)
+		[self didChangeValueForKey:@"isFinished"];
+	if ((newState == kESOperationStateExecuting) || (oldState == kESOperationStateExecuting))
+		[self didChangeValueForKey:@"isExecuting"];
+	
+	OSSpinLockUnlock(&stateLock);
 }
 
 - (void)startOnRunLoopThread
-// Starts the operation.  The actual -start method is very simple, 
+// Starts the operation. The actual -start method is very simple, 
 // deferring all of the work to be done on the run loop thread by this 
 // method.
 {
     NSParameterAssert(self.isActualRunLoopThread);
-    NSParameterAssert(self.state == kESOperationStateExecuting);
+	// If we got canceled and finished waiting for this to get scheduled, bail
+	if (self.state != kESOperationStateExecuting)
+		return;
     if ([self isCancelled]) 
 	{
         // We were cancelled before we even got running.  Flip the the finished 
@@ -124,7 +136,7 @@
 - (void)cancelOnRunLoopThread
 // Cancels the operation.
 {
-    assert(self.isActualRunLoopThread);
+    NSParameterAssert(self.isActualRunLoopThread);
 	
     // We know that a) state was kQRunLoopOperationStateExecuting when we were 
     // scheduled (that's enforced by -cancel), and b) the state can't go 
@@ -141,6 +153,9 @@
 - (void)finishWithError:(NSError *)error
 {
 	NSAssert(self.isActualRunLoopThread, @"Entered finishWithError from non run loop thread");
+	// If we got canceled and finished waiting for this to get scheduled, bail
+	if (self.state != kESOperationStateExecuting)
+		return;
     // error may be nil
     if (self.error == nil)
         self.error = error;
