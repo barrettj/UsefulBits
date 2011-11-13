@@ -72,7 +72,7 @@
 	OSSpinLockLock(&stateLock);
 	state = _state;
 	OSSpinLockUnlock(&stateLock);
-    return _state;
+    return state;
 }
 
 - (void)setState:(ESOperationState)newState
