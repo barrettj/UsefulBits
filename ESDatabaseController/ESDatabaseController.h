@@ -78,7 +78,11 @@
 /**
  * 
  */
-- (NSString *)storeName;
+- (NSURL *)storeURL;
+/**
+ * 
+ */
+- (NSURL *)modelURL;
 /**
  * 
  */

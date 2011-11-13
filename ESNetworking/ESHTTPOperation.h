@@ -1,5 +1,6 @@
 #import "ESRunLoopOperation.h"
 #import "ESNetworkError.h"
+#import "NSMutableURLRequest+ESNetworking.h"
 
 // Shared concurrent dispatch queue for work block processing
 DISPATCH_EXPORT DISPATCH_WARN_RESULT 

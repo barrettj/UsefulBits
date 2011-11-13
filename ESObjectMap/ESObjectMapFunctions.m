@@ -44,43 +44,44 @@ void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary
 			else // If there is a property map, get the input key
 				inputKey = propertyMap.inputKey;
 			// Grab our value from the input dictionary
-			dictionaryValue = [dictionary objectForKey:inputKey];
+			dictionaryValue = [dictionary valueForKeyPath:inputKey];
 			if (dictionaryValue == nil)
 				continue;
-			// At this point we have a value to work with, so let's make sure we can actually set it
+			if (dictionaryValue == [NSNull null])
+				dictionaryValue = nil;
+			// At this point we have a value (or nil) to work with, so let's make sure we can actually set it
 			if (attributes.readOnly)
 				[NSException raise:@"Readonly Exception" format:@"Attempted to set a readonly property: %@", attributes];
 			switch (attributes.storageType) {
 				case IDType:
 					// If there's a transform block, execute it
-					if (propertyMap.transformBlock)
-						propertyValue = propertyMap.transformBlock(dictionaryValue);
+					if (dictionaryValue && propertyMap.transformBlock)
+						propertyValue = propertyMap.transformBlock(object, dictionaryValue);
 					else
 						propertyValue = dictionaryValue;
-					if (propertyValue == nil)
-						continue;
 					[object setValue:propertyValue forKey:outputKey];
 					break;
 				case ObjectType:
 					// If there's a transform block, execute it
-					if (propertyMap.transformBlock)
-						propertyValue = propertyMap.transformBlock(dictionaryValue);
+					if (dictionaryValue && propertyMap.transformBlock)
+						propertyValue = propertyMap.transformBlock(object, dictionaryValue);
 					else
 						propertyValue = dictionaryValue;
-					if (propertyValue == nil)
-						continue;
-					Class class = NSClassFromString(attributes.classString);
-					if (![propertyValue isKindOfClass:class])
-						[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind of class: %@", propertyValue, NSStringFromClass(class)];
+					if (propertyValue)
+					{
+						Class class = NSClassFromString(attributes.classString);
+						if (![propertyValue isKindOfClass:class])
+							[NSException raise:@"Class Mismatch" format:@"Object: %@ is not kind of class: %@", propertyValue, NSStringFromClass(class)];
+					}
 					[object setValue:propertyValue forKey:outputKey];
 					break;
 				case IntType:
 				{
 					int intPropertyValue = 0;
 					// If there's a transform block, execute it
-					if (((ESIntPropertyMap *)propertyMap).intTransformBlock)
+					if (dictionaryValue && ((ESIntPropertyMap *)propertyMap).intTransformBlock)
 						intPropertyValue = ((ESIntPropertyMap *)propertyMap).intTransformBlock(dictionaryValue);
-					else
+					else if (dictionaryValue)
 						intPropertyValue = [dictionaryValue intValue];
 					SetPrimitivePropertyValue(object, attributes.setter, &intPropertyValue);
 					break;
@@ -89,9 +90,9 @@ void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary
 				{
 					double doublePropertyValue = 0.0;
 					// If there's a transform block, execute it
-					if (((ESDoublePropertyMap *)propertyMap).doubleTransformBlock)
+					if (dictionaryValue && ((ESDoublePropertyMap *)propertyMap).doubleTransformBlock)
 						doublePropertyValue = ((ESDoublePropertyMap *)propertyMap).doubleTransformBlock(dictionaryValue);
-					else
+					else if (dictionaryValue)
 						doublePropertyValue = [dictionaryValue doubleValue];
 					SetPrimitivePropertyValue(object, attributes.setter, &doublePropertyValue);
 					break;
@@ -100,9 +101,9 @@ void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary
 				{
 					float floatPropertyValue = 0.0f;
 					// If there's a transform block, execute it
-					if (((ESFloatPropertyMap *)propertyMap).floatTransformBlock)
+					if (dictionaryValue && ((ESFloatPropertyMap *)propertyMap).floatTransformBlock)
 						floatPropertyValue = ((ESFloatPropertyMap *)propertyMap).floatTransformBlock(dictionaryValue);
-					else
+					else if (dictionaryValue)
 						floatPropertyValue = [dictionaryValue floatValue];
 					SetPrimitivePropertyValue(object, attributes.setter, &floatPropertyValue);
 					break;
@@ -111,9 +112,9 @@ void ConfigureObjectWithDictionary(id<ESObject> object, NSDictionary *dictionary
 				{
 					BOOL boolPropertyValue = NO;
 					// If there's a transform block, execute it
-					if (((ESBOOLPropertyMap *)propertyMap).boolTransformBlock)
+					if (dictionaryValue && ((ESBOOLPropertyMap *)propertyMap).boolTransformBlock)
 						boolPropertyValue = ((ESBOOLPropertyMap *)propertyMap).boolTransformBlock(dictionaryValue);
-					else
+					else if (dictionaryValue)
 						boolPropertyValue = [dictionaryValue boolValue];
 					SetPrimitivePropertyValue(object, attributes.setter, &boolPropertyValue);
 					break;
@@ -152,7 +153,7 @@ NSDictionary * GetDictionaryRepresentation(id<ESObject> object)
 				case ObjectType:
 					propertyValue = [object valueForKey:outputKey];
 					if (propertyMap.inverseTransformBlock)
-						dictionaryValue = propertyMap.inverseTransformBlock(propertyValue);
+						dictionaryValue = propertyMap.inverseTransformBlock(object, propertyValue);
 					else
 						dictionaryValue = propertyValue;
 					break;

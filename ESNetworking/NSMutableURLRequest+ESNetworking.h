@@ -1,5 +1,5 @@
 //
-//  NSObject+PropertyDictionary.h
+//  NSMutableURLRequest+ESNetworking.h
 //
 //  Created by Doug Russell
 //  Copyright (c) 2011 Doug Russell. All rights reserved.
@@ -18,14 +18,11 @@
 //  
 
 #import <Foundation/Foundation.h>
-#import "ESDeclaredPropertyAttributes.h"
-#import "ESDeclaredPropertyFunctions.h"
 
-@interface NSObject (PropertyDictionary)
+@interface NSMutableURLRequest (ESNetworking)
 
-/**
- * @return Dictionary of ESDeclaredPropertyAttributes objects keyed by property name
- */
-+ (NSDictionary *)propertyDictionary;
++ (NSString *)urlEncodeString:(NSString *)string;
++ (NSData *)HTTPBodyWithDictionary:(NSDictionary *)body;
++ (NSMutableURLRequest *)postRequestWithURL:(NSURL *)url body:(NSDictionary *)body;
 
 @end

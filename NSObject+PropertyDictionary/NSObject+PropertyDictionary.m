@@ -18,7 +18,6 @@
 //  
 
 #import "NSObject+PropertyDictionary.h"
-#import "ESDeclaredPropertyFunctions.h"
 
 @implementation NSObject (PropertyDictionary)
 
