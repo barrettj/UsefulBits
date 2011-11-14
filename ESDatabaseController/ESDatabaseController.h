@@ -41,7 +41,10 @@
  * Subclasses use storeName to initialize store from bundle and configurePersistentStoreCoordinator: to configure it (migrations, error handling, etc)
  */
 @property (readonly, strong) NSPersistentStoreCoordinator *persistentStoreCoordinator;
-
+/**
+ * Configures whether store at [self storeURL] is marked to not be backed up to iCloud
+ */
+@property (assign, nonatomic) BOOL doNotBackupStore;
 /**
  * ESDataBaseController static instance
  * 
@@ -62,6 +65,18 @@
  * Newly initialized managedObjectContext configured with persistentStoreCoordinator
  */
 - (NSManagedObjectContext *)newManagedObjectContext;
+/**
+ * Convenience method for preflighting compatibility in the event of migration
+ */
+- (BOOL)checkStoreCompatibilityForStoreAtURL:(NSURL *)storeURL 
+									withType:(NSString * const)storeType 
+						   withConfiguration:(NSString *)configuration 
+					  withManagedObjectModel:(NSManagedObjectModel *)managedObjectModel
+									   error:(NSError **)error;
+/**
+ * Convenience method for preflighting compatibility of current store in the event of migration
+ */
+- (BOOL)checkCurrentStoreCompatibility:(NSError **)error;
 
 @end
 
@@ -90,6 +105,6 @@
 /**
  * 
  */
-- (NSURL *)applicationDocumentsDirectory;
+- (NSURL *)databaseDirectory;
 
 @end
