@@ -146,6 +146,14 @@ static NSArray * getConsole(BOOL constrainToCurrentApp)
 	return sharedConsole;
 }
 
+NO_ARC(
+	   // Little bit of dummy proofing for pre arc singleton
+	   - (id)retain { return self; }
+	   - (oneway void)release { }
+	   - (id)autorelease { return self; }
+	   - (NSUInteger)retainCount { return NSUIntegerMax; }
+)
+
 - (id)init
 {
 	self = [super init];
@@ -183,6 +191,7 @@ static NSArray * getConsole(BOOL constrainToCurrentApp)
 
 - (void)dealloc
 {
+	[[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
 	NO_ARC(
 		   [_window release];
 		   [_popoverController release];
