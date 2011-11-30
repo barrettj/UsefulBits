@@ -23,6 +23,7 @@
 
 #import "ESDatabaseController.h"
 #import <libkern/OSAtomic.h>
+#include <sys/xattr.h>
 
 @interface ESDatabaseController ()
 @end
@@ -118,7 +119,7 @@
 	OSSpinLockLock(&_momSpinlock);
 	if (_managedObjectModel == nil)
 	{
-		NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"ESDatabase" withExtension:@"momd"];
+		NSURL *modelURL = [self modelURL];
 		_managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
 	}
 	OSSpinLockUnlock(&_momSpinlock);
@@ -137,15 +138,97 @@
 	return _persistentStoreCoordinator;
 }
 
-- (NSURL *)applicationDocumentsDirectory
+- (NSURL *)databaseDirectory
 {
-	return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+	// Get director url (<application>/Library/PrivateDocuments )
+	NSURL *directoryURL = [[[[NSFileManager defaultManager] URLsForDirectory:NSLibraryDirectory 
+																   inDomains:NSUserDomainMask] lastObject] URLByAppendingPathComponent:@"PrivateDocuments"];
+	// Make sure the directory exists
+	BOOL isDir;
+	if (!([[NSFileManager defaultManager] fileExistsAtPath:[directoryURL path] isDirectory:&isDir] && isDir))
+	{
+		[[NSFileManager defaultManager] createDirectoryAtURL:directoryURL 
+								 withIntermediateDirectories:NO
+												  attributes:nil 
+													   error:nil];
+	}
+	return directoryURL;
+}
+
+- (BOOL)checkStoreCompatibilityForStoreAtURL:(NSURL *)storeURL 
+									withType:(NSString * const)storeType 
+						   withConfiguration:(NSString *)configuration 
+					  withManagedObjectModel:(NSManagedObjectModel *)managedObjectModel
+									   error:(NSError **)error
+{
+	// Sanity Check
+	if ((storeURL == nil) || 
+		(storeType == nil) ||
+		(managedObjectModel == nil))
+	{
+		if (error != nil)
+			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:0 userInfo:nil]; // Make a real error
+		return NO;
+	}
+	
+	// If store doesn't exist, compatibility isn't an issue
+	if (![[NSFileManager defaultManager] fileExistsAtPath:[storeURL path]])
+		return YES;
+	
+	NSDictionary *metadata;
+	
+	metadata = [NSPersistentStoreCoordinator metadataForPersistentStoreOfType:storeType 
+																		  URL:storeURL 
+																		error:error];
+	
+	if (metadata)
+		return [managedObjectModel isConfiguration:nil compatibleWithStoreMetadata:metadata];
+	return NO;
+}
+
+- (BOOL)checkCurrentStoreCompatibility:(NSError **)error
+{
+	return [self checkStoreCompatibilityForStoreAtURL:[self storeURL] 
+											 withType:[self storeType] 
+									withConfiguration:nil 
+							   withManagedObjectModel:[self managedObjectModel]
+												error:error];
+}
+
+- (BOOL)doNotBackupStore
+{
+	const char* filePath;
+	const char* attrName;
+	u_int8_t attrValue;
+	int result;
+	
+	filePath = [[[self storeURL] path] fileSystemRepresentation];
+	attrName = "com.apple.MobileBackup";
+	result = getxattr(filePath, attrName, &attrValue, sizeof(attrValue), 0, 0);
+	if ((result > 0) && (attrValue == 0))
+		return YES;
+	return NO;
+}
+
+- (void)setDoNotBackupStore:(BOOL)backup
+{
+	const char* filePath;
+	const char* attrName;
+	u_int8_t attrValue;
+	
+	filePath = [[[self storeURL] path] fileSystemRepresentation];
+	attrName = "com.apple.MobileBackup";
+	if (backup)
+		attrValue = 0;
+	else
+		attrValue = 1;
+	setxattr(filePath, attrName, &attrValue, sizeof(attrValue), 0, 0);
 }
 
 #pragma mark - Subclasses
 - (void)configurePersistentStoreCoordinator:(NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
-	NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:[self storeName]];
+	NSURL *storeURL = [self storeURL];
 	NSError *error = nil;
 	if (![persistentStoreCoordinator addPersistentStoreWithType:[self storeType] configuration:nil URL:storeURL options:nil error:&error])
 		[NSException raise:NSGenericException format:@"Unresolved error %@, %@", error, [error userInfo]];
@@ -156,9 +239,17 @@
 	[NSException raise:NSGenericException format:@"Unresolved error %@, %@", error, [error userInfo]];
 }
 
-- (NSString *)storeName
+- (NSURL *)storeURL
 {
-	NSAssert(NO, @"Implement storeName in subclass");
+	NSAssert(NO, @"Implement storeURL in subclass");
+	//return [[self databaseDirectory] URLByAppendingPathComponent:[self storeName]];
+	return nil;
+}
+
+- (NSURL *)modelURL
+{
+	NSAssert(NO, @"Implement modelURL in subclass");
+	//return [[NSBundle mainBundle] URLForResource:@"ESDatabase" withExtension:@"momd"];
 	return nil;
 }
 

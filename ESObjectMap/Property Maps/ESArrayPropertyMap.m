@@ -33,7 +33,7 @@
 	if (self)
 	{
 		self.memberClass = memberClass;
-		self.transformBlock = ^id(id inputValue) {
+		self.transformBlock = ^id (id<ESObject> object, id inputValue) {
 			NSMutableArray *outArray = [NSMutableArray new];
 			for (NSDictionary *dictionary in (NSArray *)inputValue)
 			{
@@ -45,7 +45,7 @@
 			}
 			return outArray;
 		};
-		self.inverseTransformBlock = ^id(id inputValue) {
+		self.inverseTransformBlock = ^id (id<ESObject> object, id inputValue) {
 			NSMutableArray *dictionaryArray = [NSMutableArray new];
 			for (id member in (NSArray *)inputValue)
 			{

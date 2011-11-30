@@ -33,10 +33,10 @@
 	if (self)
 	{
 		self.objectClass = objectClass;
-		self.transformBlock = ^id(id inputValue) {
+		self.transformBlock = ^id (id<ESObject> object, id inputValue) {
 			return [[objectClass alloc] initWithDictionary:inputValue];
 		};
-		self.inverseTransformBlock = ^id(id inputValue) {
+		self.inverseTransformBlock = ^id (id<ESObject> object, id inputValue) {
 			return [inputValue dictionaryRepresentation];
 		};
 	}

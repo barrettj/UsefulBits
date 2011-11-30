@@ -30,12 +30,12 @@
 {
 	self = [super initWithInputKey:inputKey 
 						 outputKey:outputKey 
-					transformBlock:^id(id inputValue) {
+					transformBlock:^id (id<ESObject> object, id inputValue) {
 						return [NSURL URLWithString:inputValue];
 					}];
 	if (self)
 	{
-		self.inverseTransformBlock = ^id(id inputValue) {
+		self.inverseTransformBlock = ^id (id<ESObject> object, id inputValue) {
 			return [inputValue absoluteString];
 		};
 	}
