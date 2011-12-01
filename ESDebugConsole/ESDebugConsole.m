@@ -38,6 +38,8 @@
 //#define ASL_KEY_LEVEL     "Level"
 //#define ASL_KEY_MSG       "Message"
 
+NSString *const kAllLogsKey = @"AllLogsKey";
+
 @interface ESConsoleEntry : NSObject 
 @property (nonatomic, retain) NSString *message;
 @property (nonatomic, retain) NSString *shortMessage;
@@ -48,21 +50,21 @@
 
 //http://www.cocoanetics.com/2011/03/accessing-the-ios-system-log/
 //http://developer.apple.com/library/ios/#documentation/System/Conceptual/ManPages_iPhoneOS/man3/asl.3.html#//apple_ref/doc/man/3/asl
-static NSArray * getConsole(BOOL constrainToCurrentApp)
+static NSDictionary * getConsole()
 {
 	aslmsg q, m;
 	int i;
 	const char *key, *val;
-	NSMutableArray *consoleLog;
-	NSString *applicationIdentifier;
-	NSString *applicationIdentifierKey;
+	NSMutableDictionary *consoleLog;
 	
 	q = asl_new(ASL_TYPE_QUERY);
 	
-	consoleLog = [NSMutableArray new];
+	consoleLog = [NSMutableDictionary new];
 	
-	applicationIdentifier = [[[NSBundle mainBundle] infoDictionary] objectForKey:(id)kCFBundleIdentifierKey];
-	applicationIdentifierKey = [NSString stringWithCString:ASL_KEY_FACILITY encoding:NSUTF8StringEncoding];
+	NSMutableArray *allLogs = [NSMutableArray new];
+	[consoleLog setObject:allLogs forKey:kAllLogsKey];
+	NO_ARC([allLogs release];)
+	
 	aslresponse r = asl_search(NULL, q);
 	while (NULL != (m = aslresponse_next(r)))
 	{
@@ -83,29 +85,43 @@ static NSArray * getConsole(BOOL constrainToCurrentApp)
 			}
 		}
 		
-		if (constrainToCurrentApp && ![[tmpDict objectForKey:applicationIdentifierKey] isEqualToString:applicationIdentifier])
-			continue;
-		
 		ESConsoleEntry *entry = [[ESConsoleEntry alloc] initWithDictionary:tmpDict];
 		if (entry != nil)
 		{
-			[consoleLog addObject:entry];
+			NSMutableArray *logEntries = [consoleLog objectForKey:entry.applicationIdentifier];
+			if (logEntries == nil)
+			{
+				logEntries = [NSMutableArray new];
+				[consoleLog setObject:logEntries forKey:entry.applicationIdentifier];
+				NO_ARC([logEntries release];)
+			}
+			[logEntries addObject:entry];
+			logEntries = [consoleLog objectForKey:kAllLogsKey];
+			[logEntries addObject:entry];
 			NO_ARC([entry release];)
 		}
 	}
 	aslresponse_free(r);
 	
-	[consoleLog sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
+	for (NSMutableArray *logEntries in [consoleLog allValues])
+	{
+		[logEntries sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
+	}
 	
-	NSArray *retVal = [NSArray arrayWithArray:consoleLog];
+	NSDictionary *retVal = [NSDictionary dictionaryWithDictionary:consoleLog];
 	
 	NO_ARC([consoleLog release];)
 	
 	return retVal;
 }
 
+@interface ESDebugAppListTableViewController : UITableViewController
+@property (nonatomic, retain) NSDictionary *allApplicationLogs;
+@property (nonatomic, retain) NSArray *allApps;
+@end
+
 @interface ESDebugTableViewController : UITableViewController
-@property (nonatomic, retain) NSArray *logs;
+@property (nonatomic, retain) NSArray *applicationLogs;
 @property (nonatomic, retain) UISegmentedControl *segmentedControl;
 @end
 
@@ -123,7 +139,6 @@ static NSArray * getConsole(BOOL constrainToCurrentApp)
 @property (nonatomic, retain) UIWindow *window;
 @property (nonatomic, retain) UIPopoverController *popoverController;
 @property (nonatomic, retain) UINavigationController *navigationController;
-@property (nonatomic, retain) ESDebugTableViewController *debugTableViewController;
 - (void)commonInit;
 @end
 
@@ -131,7 +146,6 @@ static NSArray * getConsole(BOOL constrainToCurrentApp)
 @synthesize window=_window;
 @synthesize popoverController=_popoverController;
 @synthesize navigationController=_navigationController;
-@synthesize debugTableViewController=_debugTableViewController;
 @synthesize gestureRecognizer=_gestureRecognizer;
 
 #pragma mark - 
@@ -196,7 +210,6 @@ NO_ARC(
 		   [_window release];
 		   [_popoverController release];
 		   [_navigationController release];
-		   [_debugTableViewController release];
 		   [_gestureRecognizer release];
 		   [super dealloc];
 		   )
@@ -207,13 +220,12 @@ NO_ARC(
 - (void)lowMemoryWarning:(NSNotification *)notification
 {
 	[self.popoverController dismissPopoverAnimated:NO];
-	if ([self.debugTableViewController respondsToSelector:@selector(dismissViewControllerAnimated:completion:)])
-		[self.debugTableViewController dismissViewControllerAnimated:YES completion:nil];
-	else
-		[self.debugTableViewController dismissModalViewControllerAnimated:YES];
 	self.popoverController = nil;
+	if ([self.navigationController respondsToSelector:@selector(dismissViewControllerAnimated:completion:)])
+		[self.navigationController dismissViewControllerAnimated:YES completion:nil];
+	else
+		[self.navigationController dismissModalViewControllerAnimated:YES];
 	self.navigationController = nil;
-	self.debugTableViewController = nil;
 }
 
 #pragma mark - 
@@ -223,8 +235,6 @@ NO_ARC(
 	if (gestureRecognizer.state != UIGestureRecognizerStateEnded)
 		return;
 	
-	self.debugTableViewController.logs = getConsole((self.debugTableViewController.segmentedControl.selectedSegmentIndex == 0) ? YES : NO);
-	[self.debugTableViewController.tableView reloadData];
 	if (ISPAD)
 	{
 		[self.popoverController presentPopoverFromRect:CGRectMake(0, 0, 10, 10) 
@@ -255,18 +265,11 @@ NO_ARC(
 {
 	if (_navigationController == nil)
 	{
-		_navigationController = [[UINavigationController alloc] initWithRootViewController:self.debugTableViewController];
+		ESDebugAppListTableViewController *tvc = [ESDebugAppListTableViewController new];
+		_navigationController = [[UINavigationController alloc] initWithRootViewController:tvc];
+		NO_ARC([tvc release];)
 	}
 	return _navigationController;
-}
-
-- (ESDebugTableViewController *)debugTableViewController
-{
-	if (_debugTableViewController == nil)
-	{
-		_debugTableViewController = [ESDebugTableViewController new];
-	}
-	return _debugTableViewController;
 }
 
 - (void)setGestureRecognizer:(UIGestureRecognizer *)gestureRecognizer
@@ -306,8 +309,8 @@ NO_ARC(
 		}
 		
 		self.message = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_MSG encoding:NSUTF8StringEncoding]];
-		if (self.message.length > 400)
-			self.shortMessage = [self.message substringToIndex:400];
+		if (self.message.length > 200)
+			self.shortMessage = [self.message substringToIndex:200];
 		else
 			self.shortMessage = self.message;
 		self.applicationIdentifier = [dictionary objectForKey:[NSString stringWithCString:ASL_KEY_FACILITY encoding:NSUTF8StringEncoding]];
@@ -336,53 +339,19 @@ NO_ARC(
 
 @end
 
-@implementation ESDebugTableViewController
-@synthesize logs=_logs;
-@synthesize segmentedControl=_segmentedControl;
+@implementation ESDebugAppListTableViewController
+@synthesize allApplicationLogs=_allApplicationLogs;
+@synthesize allApps=_allApps;
 
 #pragma mark - 
 
 - (void)dealloc
 {
 	NO_ARC(
-		   [_logs release];
-		   [_segmentedControl release];
+		   [_allApplicationLogs release];
+		   [_allApps release];
 		   [super dealloc];
 		   )
-}
-
-#pragma mark - 
-
-- (void)viewDidLoad
-{
-	[super viewDidLoad];
-	
-	self.title = @"Console";
-	
-	if (ISPHONE)
-	{
-		UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done:)];
-		self.navigationItem.rightBarButtonItem = doneButton;
-		NO_ARC([doneButton release];)
-	}
-	
-	UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh:)];
-	self.navigationItem.leftBarButtonItem = refreshButton;
-	NO_ARC([refreshButton release];)
-	
-	UISegmentedControl *segmentedControl = [[UISegmentedControl alloc] initWithItems:[NSArray arrayWithObjects:@"Current", @"All", nil]];
-	segmentedControl.segmentedControlStyle = UISegmentedControlStyleBar;
-	segmentedControl.selectedSegmentIndex = 0;
-	[segmentedControl addTarget:self action:@selector(segmentedControlChanged:) forControlEvents:UIControlEventValueChanged];
-	self.segmentedControl = segmentedControl;
-	self.tableView.tableHeaderView = segmentedControl;
-	NO_ARC([segmentedControl release];)
-}
-
-- (void)viewDidUnload
-{
-	[super viewDidUnload];
-	self.segmentedControl = nil;
 }
 
 #pragma mark - 
@@ -397,31 +366,151 @@ NO_ARC(
 
 - (void)refresh:(id)sender
 {
-	self.logs = getConsole((self.segmentedControl.selectedSegmentIndex == 0) ? YES : NO);
-	[self.tableView reloadData];
+	UIActivityIndicatorView *activity = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
+	[activity startAnimating];
+	UIBarButtonItem *activityButton = [[UIBarButtonItem alloc] initWithCustomView:activity];
+	NO_ARC([activity release];)
+	self.navigationItem.leftBarButtonItem = activityButton;
+	NO_ARC([activityButton release];)
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(void) {
+		NSDictionary *logs = getConsole();
+		dispatch_async(dispatch_get_main_queue(), ^(void) {
+			self.allApplicationLogs = logs;
+			self.allApps = [self.allApplicationLogs allKeys];
+			[self.tableView reloadData];
+			UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh:)];
+			self.navigationItem.leftBarButtonItem = refreshButton;
+			NO_ARC([refreshButton release];)
+		});
+	});
 }
 
-- (void)segmentedControlChanged:(UISegmentedControl *)sender
+#pragma mark - 
+
+- (void)viewDidLoad
 {
-	switch ([sender selectedSegmentIndex]) {
-		case 0:
-			self.logs = getConsole(YES);
-			break;
-		case 1:
-			self.logs = getConsole(NO);
-			break;
-		default:
-			break;
+	[super viewDidLoad];
+	
+	self.title = @"App List";
+	
+	if (ISPHONE)
+	{
+		UIBarButtonItem *doneButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemDone target:self action:@selector(done:)];
+		self.navigationItem.rightBarButtonItem = doneButton;
+		NO_ARC([doneButton release];)
 	}
-	[self.tableView reloadData];
+	
+	[self refresh:nil];
+}
+
+- (void)viewDidUnload
+{
+	[super viewDidUnload];
+	
+	self.allApplicationLogs = nil;
+	self.allApps = nil;
 }
 
 #pragma mark - 
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-	if (self.logs)
-		return self.logs.count;
+	if (self.allApps)
+		return self.allApps.count + 2;
+	return 0;
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	static NSString *reuseIdentifier = @"Cell";
+	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:reuseIdentifier];
+	if (cell == nil)
+	{
+		cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:reuseIdentifier];
+		NO_ARC([cell autorelease];)
+	}
+	
+	switch (indexPath.row) {
+		case 0:
+			cell.textLabel.text = @"All";
+			break;
+		case 1:
+			cell.textLabel.text = @"Current";
+			break;
+		default:
+			cell.textLabel.text = [self.allApps objectAtIndex:indexPath.row-2];
+			break;
+	}
+	
+	return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+	[tableView deselectRowAtIndexPath:indexPath animated:YES];
+	
+	ESDebugTableViewController *tvc = [ESDebugTableViewController new];
+	switch (indexPath.row) {
+		case 0:
+			tvc.applicationLogs = [self.allApplicationLogs objectForKey:kAllLogsKey];
+			break;
+		case 1:
+			tvc.applicationLogs = [self.allApplicationLogs objectForKey:[[[NSBundle mainBundle] infoDictionary] objectForKey:(id)kCFBundleIdentifierKey]];
+			break;
+		default:
+			tvc.applicationLogs = [self.allApplicationLogs objectForKey:[self.allApps objectAtIndex:indexPath.row-2]];
+			break;
+	}
+	[self.navigationController pushViewController:tvc animated:YES];
+	NO_ARC([tvc release];)
+}
+
+#pragma mark - 
+
+- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation
+{
+	return YES;
+}
+
+@end
+
+@implementation ESDebugTableViewController
+@synthesize applicationLogs=_applicationLogs;
+@synthesize segmentedControl=_segmentedControl;
+
+#pragma mark - 
+
+- (void)dealloc
+{
+	NO_ARC(
+		   [_applicationLogs release];
+		   [_segmentedControl release];
+		   [super dealloc];
+		   )
+}
+
+#pragma mark - 
+
+- (void)viewDidLoad
+{
+	[super viewDidLoad];
+	
+	self.title = @"Console";
+}
+
+- (void)viewDidUnload
+{
+	[super viewDidUnload];
+	self.segmentedControl = nil;
+	self.applicationLogs = nil;
+}
+
+#pragma mark - 
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+	if (self.applicationLogs)
+		return self.applicationLogs.count;
 	return 0;
 }
 
@@ -435,7 +524,7 @@ NO_ARC(
 		NO_ARC([cell autorelease];)
 	}
 	
-	ESConsoleEntry *entry = [self.logs objectAtIndex:indexPath.row];
+	ESConsoleEntry *entry = [self.applicationLogs objectAtIndex:indexPath.row];
 	cell.applicationIdentifierLabel.text = entry.applicationIdentifier;
 	cell.messageLabel.text = entry.shortMessage;
 	cell.dateLabel.text = [entry.date description];
@@ -448,7 +537,7 @@ NO_ARC(
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 	
 	ESDebugDetailViewController *detailViewController = [ESDebugDetailViewController new];
-	detailViewController.textView.text = [NSString stringWithFormat:@"%@", [self.logs objectAtIndex:indexPath.row]];
+	detailViewController.textView.text = [NSString stringWithFormat:@"%@", [self.applicationLogs objectAtIndex:indexPath.row]];
 	[self.navigationController pushViewController:detailViewController animated:YES];
 	NO_ARC([detailViewController release];)
 }
@@ -457,7 +546,7 @@ NO_ARC(
 {
 	// This assumes that the table view cells content view is as wide as the actual table,
 	// which isn't necessarily true, but works fine here
-	CGSize size = [[[self.logs objectAtIndex:indexPath.row] shortMessage] sizeWithFont:[UIFont systemFontOfSize:17] constrainedToSize:CGSizeMake(self.tableView.frame.size.width - 20, 10000) lineBreakMode:UILineBreakModeWordWrap];
+	CGSize size = [[[self.applicationLogs objectAtIndex:indexPath.row] shortMessage] sizeWithFont:[UIFont systemFontOfSize:17] constrainedToSize:CGSizeMake(self.tableView.frame.size.width - 20, 10000) lineBreakMode:UILineBreakModeWordWrap];
 	// add in the padding for the applicationIdentifier and date
 	size.height += 60;
 	return size.height;
