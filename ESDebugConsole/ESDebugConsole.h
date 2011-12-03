@@ -18,12 +18,32 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString *const kESDebugConsoleAllLogsKey;
+
 @interface ESDebugConsole : NSObject
 
+/**
+ * Shared instance of debug console overlay
+ */
 + (id)sharedDebugConsole;
 
-// Gesture recognizer will by default be a rotation gesture recognizer attached to the window
-// If you set your own it's target must be [ESDebugConsole sharedDebugConsole] with action gestureRecognized:
+/**
+ * Dictionary containing arrays of ESConsoleEntry objects
+ * Keyed by application identifier.
+ * Key kESDebugConsoleAllLogsKey returns an array of console entries for all apps.
+ */
++ (NSDictionary *)getConsole;
+
+/**
+ * Gesture recognizer will by default be a rotation gesture recognizer attached to the window
+ * If you set your own it's target must be [ESDebugConsole sharedDebugConsole] with action gestureRecognized:
+ */
 @property (nonatomic, retain) UIGestureRecognizer *gestureRecognizer;
 
+@end
+
+@interface ESConsoleEntry : NSObject
+@property (nonatomic, retain) NSString *applicationIdentifier;
+@property (nonatomic, retain) NSString *message;
+@property (nonatomic, retain) NSDate *date;
 @end

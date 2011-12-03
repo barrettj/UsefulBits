@@ -38,82 +38,12 @@
 //#define ASL_KEY_LEVEL     "Level"
 //#define ASL_KEY_MSG       "Message"
 
-NSString *const kAllLogsKey = @"AllLogsKey";
+NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 
-@interface ESConsoleEntry : NSObject 
-@property (nonatomic, retain) NSString *message;
+@interface ESConsoleEntry ()
 @property (nonatomic, retain) NSString *shortMessage;
-@property (nonatomic, retain) NSString *applicationIdentifier;
-@property (nonatomic, retain) NSDate *date;
 - (id)initWithDictionary:(NSDictionary *)dictionary;
 @end
-
-//http://www.cocoanetics.com/2011/03/accessing-the-ios-system-log/
-//http://developer.apple.com/library/ios/#documentation/System/Conceptual/ManPages_iPhoneOS/man3/asl.3.html#//apple_ref/doc/man/3/asl
-static NSDictionary * getConsole()
-{
-	aslmsg q, m;
-	int i;
-	const char *key, *val;
-	NSMutableDictionary *consoleLog;
-	
-	q = asl_new(ASL_TYPE_QUERY);
-	
-	consoleLog = [NSMutableDictionary new];
-	
-	NSMutableArray *allLogs = [NSMutableArray new];
-	[consoleLog setObject:allLogs forKey:kAllLogsKey];
-	NO_ARC([allLogs release];)
-	
-	aslresponse r = asl_search(NULL, q);
-	while (NULL != (m = aslresponse_next(r)))
-	{
-		NSMutableDictionary *tmpDict = [NSMutableDictionary dictionary];
-		
-		for (i = 0; (NULL != (key = asl_key(m, i))); i++)
-		{
-			NSString *keyString = [NSString stringWithUTF8String:(char *)key];
-			
-			val = asl_get(m, key);
-			
-			if (val != NULL)
-			{
-				NSString *string = [NSString stringWithUTF8String:val];
-				
-				if (string != nil)
-					[tmpDict setObject:string forKey:keyString];
-			}
-		}
-		
-		ESConsoleEntry *entry = [[ESConsoleEntry alloc] initWithDictionary:tmpDict];
-		if (entry != nil)
-		{
-			NSMutableArray *logEntries = [consoleLog objectForKey:entry.applicationIdentifier];
-			if (logEntries == nil)
-			{
-				logEntries = [NSMutableArray new];
-				[consoleLog setObject:logEntries forKey:entry.applicationIdentifier];
-				NO_ARC([logEntries release];)
-			}
-			[logEntries addObject:entry];
-			logEntries = [consoleLog objectForKey:kAllLogsKey];
-			[logEntries addObject:entry];
-			NO_ARC([entry release];)
-		}
-	}
-	aslresponse_free(r);
-	
-	for (NSMutableArray *logEntries in [consoleLog allValues])
-	{
-		[logEntries sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
-	}
-	
-	NSDictionary *retVal = [NSDictionary dictionaryWithDictionary:consoleLog];
-	
-	NO_ARC([consoleLog release];)
-	
-	return retVal;
-}
 
 @interface ESDebugAppListTableViewController : UITableViewController
 @property (nonatomic, retain) NSDictionary *allApplicationLogs;
@@ -213,6 +143,75 @@ NO_ARC(
 		   [_gestureRecognizer release];
 		   [super dealloc];
 		   )
+}
+
+#pragma mark -
+
+//http://www.cocoanetics.com/2011/03/accessing-the-ios-system-log/
+//http://developer.apple.com/library/ios/#documentation/System/Conceptual/ManPages_iPhoneOS/man3/asl.3.html#//apple_ref/doc/man/3/asl
++ (NSDictionary *)getConsole
+{
+	aslmsg q, m;
+	int i;
+	const char *key, *val;
+	NSMutableDictionary *consoleLog;
+	
+	q = asl_new(ASL_TYPE_QUERY);
+	
+	consoleLog = [NSMutableDictionary new];
+	
+	NSMutableArray *allLogs = [NSMutableArray new];
+	[consoleLog setObject:allLogs forKey:kESDebugConsoleAllLogsKey];
+	NO_ARC([allLogs release];)
+	
+	aslresponse r = asl_search(NULL, q);
+	while (NULL != (m = aslresponse_next(r)))
+	{
+		NSMutableDictionary *tmpDict = [NSMutableDictionary dictionary];
+		
+		for (i = 0; (NULL != (key = asl_key(m, i))); i++)
+		{
+			NSString *keyString = [NSString stringWithUTF8String:(char *)key];
+			
+			val = asl_get(m, key);
+			
+			if (val != NULL)
+			{
+				NSString *string = [NSString stringWithUTF8String:val];
+				
+				if (string != nil)
+					[tmpDict setObject:string forKey:keyString];
+			}
+		}
+		
+		ESConsoleEntry *entry = [[ESConsoleEntry alloc] initWithDictionary:tmpDict];
+		if (entry != nil)
+		{
+			NSMutableArray *logEntries = [consoleLog objectForKey:entry.applicationIdentifier];
+			if (logEntries == nil)
+			{
+				logEntries = [NSMutableArray new];
+				[consoleLog setObject:logEntries forKey:entry.applicationIdentifier];
+				NO_ARC([logEntries release];)
+			}
+			[logEntries addObject:entry];
+			logEntries = [consoleLog objectForKey:kESDebugConsoleAllLogsKey];
+			[logEntries addObject:entry];
+			NO_ARC([entry release];)
+		}
+	}
+	aslresponse_free(r);
+	
+	for (NSMutableArray *logEntries in [consoleLog allValues])
+	{
+		[logEntries sortUsingDescriptors:[NSArray arrayWithObjects:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:NO], nil]];
+	}
+	
+	NSDictionary *retVal = [NSDictionary dictionaryWithDictionary:consoleLog];
+	
+	NO_ARC([consoleLog release];)
+	
+	return retVal;
 }
 
 #pragma mark - 
@@ -373,10 +372,13 @@ NO_ARC(
 	self.navigationItem.leftBarButtonItem = activityButton;
 	NO_ARC([activityButton release];)
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(void) {
-		NSDictionary *logs = getConsole();
+		NSDictionary *logs = [ESDebugConsole getConsole];
 		dispatch_async(dispatch_get_main_queue(), ^(void) {
 			self.allApplicationLogs = logs;
-			self.allApps = [self.allApplicationLogs allKeys];
+			NSMutableArray *allApps = [[self.allApplicationLogs allKeys] mutableCopy];
+			[allApps removeObject:kESDebugConsoleAllLogsKey];
+			self.allApps = allApps;
+			NO_ARC([allApps release];)
 			[self.tableView reloadData];
 			UIBarButtonItem *refreshButton = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self action:@selector(refresh:)];
 			self.navigationItem.leftBarButtonItem = refreshButton;
@@ -452,7 +454,7 @@ NO_ARC(
 	ESDebugTableViewController *tvc = [ESDebugTableViewController new];
 	switch (indexPath.row) {
 		case 0:
-			tvc.applicationLogs = [self.allApplicationLogs objectForKey:kAllLogsKey];
+			tvc.applicationLogs = [self.allApplicationLogs objectForKey:kESDebugConsoleAllLogsKey];
 			break;
 		case 1:
 			tvc.applicationLogs = [self.allApplicationLogs objectForKey:[[[NSBundle mainBundle] infoDictionary] objectForKey:(id)kCFBundleIdentifierKey]];
