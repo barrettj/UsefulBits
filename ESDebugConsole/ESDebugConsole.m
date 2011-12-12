@@ -77,6 +77,7 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 @synthesize popoverController=_popoverController;
 @synthesize navigationController=_navigationController;
 @synthesize gestureRecognizer=_gestureRecognizer;
+@synthesize size=_size;;
 
 #pragma mark - 
 
@@ -124,6 +125,7 @@ NO_ARC(
 		return;
 	}
 	self.window = window;
+    self.size = CGSizeZero;
 	UIRotationGestureRecognizer *rotationGesture = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureRecognized:)];
 	rotationGesture.cancelsTouchesInView = NO;
 	self.gestureRecognizer = rotationGesture;
@@ -265,6 +267,8 @@ NO_ARC(
 	if (_navigationController == nil)
 	{
 		ESDebugAppListTableViewController *tvc = [ESDebugAppListTableViewController new];
+        if (!CGSizeEqualToSize(self.size, CGSizeZero))
+            tvc.contentSizeForViewInPopover = self.size;
 		_navigationController = [[UINavigationController alloc] initWithRootViewController:tvc];
 		NO_ARC([tvc release];)
 	}
@@ -452,6 +456,7 @@ NO_ARC(
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 	
 	ESDebugTableViewController *tvc = [ESDebugTableViewController new];
+    tvc.contentSizeForViewInPopover = self.contentSizeForViewInPopover;
 	switch (indexPath.row) {
 		case 0:
 			tvc.applicationLogs = [self.allApplicationLogs objectForKey:kESDebugConsoleAllLogsKey];
@@ -539,6 +544,7 @@ NO_ARC(
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 	
 	ESDebugDetailViewController *detailViewController = [ESDebugDetailViewController new];
+    detailViewController.contentSizeForViewInPopover = self.contentSizeForViewInPopover;
 	detailViewController.textView.text = [NSString stringWithFormat:@"%@", [self.applicationLogs objectAtIndex:indexPath.row]];
 	[self.navigationController pushViewController:detailViewController animated:YES];
 	NO_ARC([detailViewController release];)

@@ -40,6 +40,9 @@ extern NSString *const kESDebugConsoleAllLogsKey;
  */
 @property (nonatomic, retain) UIGestureRecognizer *gestureRecognizer;
 
+@property (nonatomic, assign) CGSize size;
+
+
 @end
 
 @interface ESConsoleEntry : NSObject
