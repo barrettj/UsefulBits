@@ -77,7 +77,7 @@ NSString *const kESDebugConsoleAllLogsKey = @"ESDebugConsoleAllLogsKey";
 @synthesize popoverController=_popoverController;
 @synthesize navigationController=_navigationController;
 @synthesize gestureRecognizer=_gestureRecognizer;
-@synthesize size=_size;;
+@synthesize consoleSizeInPopover=_consoleSizeInPopover;
 
 #pragma mark - 
 
@@ -125,7 +125,7 @@ NO_ARC(
 		return;
 	}
 	self.window = window;
-    self.size = CGSizeZero;
+    self.consoleSizeInPopover = CGSizeZero;
 	UIRotationGestureRecognizer *rotationGesture = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(gestureRecognized:)];
 	rotationGesture.cancelsTouchesInView = NO;
 	self.gestureRecognizer = rotationGesture;
@@ -267,8 +267,8 @@ NO_ARC(
 	if (_navigationController == nil)
 	{
 		ESDebugAppListTableViewController *tvc = [ESDebugAppListTableViewController new];
-        if (!CGSizeEqualToSize(self.size, CGSizeZero))
-            tvc.contentSizeForViewInPopover = self.size;
+		if (!CGSizeEqualToSize(self.consoleSizeInPopover, CGSizeZero))
+			tvc.contentSizeForViewInPopover = self.consoleSizeInPopover;
 		_navigationController = [[UINavigationController alloc] initWithRootViewController:tvc];
 		NO_ARC([tvc release];)
 	}

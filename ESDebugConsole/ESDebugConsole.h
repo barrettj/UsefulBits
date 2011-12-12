@@ -39,8 +39,10 @@ extern NSString *const kESDebugConsoleAllLogsKey;
  * If you set your own it's target must be [ESDebugConsole sharedDebugConsole] with action gestureRecognized:
  */
 @property (nonatomic, retain) UIGestureRecognizer *gestureRecognizer;
-
-@property (nonatomic, assign) CGSize size;
+/**
+ * Used by view controllers when displayed in UIPopoverController
+ */
+@property (nonatomic, assign) CGSize consoleSizeInPopover;
 
 
 @end
